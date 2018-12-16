@@ -1,39 +1,24 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
 # usb canary by fijimunkii
 # monitor usb devices while your computer is locked
 # get notified when someone plugs in or removes a usb device
-# NOTE: optional arg to always alert
-# NOTE: optional environment variables for sms:
-#   TWILIO_FROM
-#   TWILIO_TO
-#   TWILIO_SID
-#   TWILIO_AUTH
-# TODO: posix diff
+# NOTE: optional environment's variables may be define in .env file; see .env.sample file to example
 
 set -u
 set -o pipefail
 
-[ -z ${1+x} ] && PARANOID=0 || PARANOID=1
+folder_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+if [[ ! -f "$folder_path/functions.sh" ]]; then echo "Missing functions.sh file"; exit 1; fi
+if [[ ! -f "$folder_path/.env" ]]; then echo "Missing .env file"; exit 1; fi
+
+. "$folder_path/functions.sh"
+. "$folder_path/.env"
+
 HOSTNAME=$(hostname -s)
 
-function alert {
-  echo "$1"
-  [ -z ${TWILIO_FROM+x} ] || [ -z ${TWILIO_TO+x} ] || \
-  [ -z ${TWILIO_SID+x} ] || [ -z ${TWILIO_AUTH+x} ] || \
-  curl -X POST https://api.twilio.com/2010-04-01/Accounts/$TWILIO_SID/Messages.json \
-    --data-urlencode "Body=$1" \
-    --data-urlencode "From=$TWILIO_FROM" \
-    --data-urlencode "To=$TWILIO_TO" \
-    -u $TWILIO_SID:$TWILIO_AUTH
-}
-
-function exit_canary {
-  alert "EXIT from USB CANARY on $HOSTNAME"
-  exit
-}
 trap exit_canary EXIT HUP INT TERM
 
-OS=""
 case "$(uname -s)" in
    Darwin) OS='Mac' ;;
    Linux) OS='Linux' ;;
@@ -45,22 +30,22 @@ do
 
   sleep 0.5s
   AWAY=0
-  [ -z ${NEW_DEVICES+x} ] && DEVICES="" || DEVICES="$NEW_DEVICES"
+  [[ -z ${NEW_DEVICES+x} ]] && DEVICES="" || DEVICES="$NEW_DEVICES"
 
-  if [ $OS = 'Mac' ] ; then
+  if [[ $OS = 'Mac' ]]; then
     NEW_DEVICES=$(ioreg -p IOUSB -w0 | sed 's/[^o]*o //; s/@.*$//' | grep -v '^Root.*')
     # Idle for 1 minute
     IDLETIME=$(ioreg -c IOHIDSystem | awk '/HIDIdleTime/ {print int($NF/1000000000); exit}')
-    [ "$IDLETIME" -gt "60" ] && AWAY=1
+    [[ "$IDLETIME" -gt "60" ]] && AWAY=1
     # No graphics capabilities
     pmset -g systemstate | grep Graphics > /dev/null || AWAY=1
     # Screensaver enabled
     pgrep -q ScreenSaverEngine > /dev/null && AWAY=1
-  elif [ $OS = 'Linux' ] ; then
+  elif [[ $OS = 'Linux' ]]; then
     NEW_DEVICES=$(lsusb)
     # Idle for 1 minute
     command -v gnome-screensaver-command -q | grep -w -c inactive && AWAY=1
-    command -v xprintidle && [ "$(xprintidle)" -gt "60000" ] && AWAY=1
+    command -v xprintidle && [[ "$(xprintidle)" -gt "60000" ]] && AWAY=1
     command -v xscreensaver-command && xscreensaver-command -time && AWAY=1
     # Screensaver enabled
     qdbus org.freedesktop.ScreenSaver /ScreenSaver org.freedesktop.ScreenSaver.GetActive && AWAY=1
@@ -68,9 +53,9 @@ do
     qdbus org.gnome.ScreenSaver /ScreenSaver org.gnome.ScreenSaver.GetActive && AWAY=1
   fi
 
-  if [ "$DEVICES" != "" ] && { [ "$PARANOID" -gt "0" ] || [ "$AWAY" -gt "0" ]; }; then
+  if [[ "$DEVICES" != "" ]] && { [[ "$PARANOID" -gt "0" ]] || [[ "$AWAY" -gt "0" ]]; }; then
     DIFF=$(diff -U 0 <(echo "$DEVICES") <(echo "$NEW_DEVICES") 2>/dev/null | sed '1,3d')
-    if [ "$?" != "0" ] && [ "$DIFF" != "" ] ; then
+    if [[ "$?" != "0" ]] && [[ "$DIFF" != "" ]]; then
       alert "USB CANARY on $HOSTNAME: $DIFF"
     fi
   fi
