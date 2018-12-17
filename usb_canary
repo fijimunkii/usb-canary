@@ -10,10 +10,9 @@ set -o pipefail
 
 folder_path="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [[ ! -f "$folder_path/functions.sh" ]]; then echo "Missing functions.sh file"; exit 1; fi
-if [[ ! -f "$folder_path/.env" ]]; then echo "Missing .env file"; exit 1; fi
-
 . "$folder_path/functions.sh"
-. "$folder_path/.env"
+
+if [[ -f "$folder_path/.env" ]]; then . "$folder_path/.env"; fi
 
 HOSTNAME=$(hostname -s)
 

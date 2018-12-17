@@ -9,12 +9,24 @@ Logging all events
 `PARANOID=1 ./usb_canary`
 
 With SMS alerting:
-`TWILIO=1 TWILIO_FROM="+16665554321" TWILIO_TO="+1123456789" TWILIO_SID="oaiufs0al444236675kjfh" TWILIO_AUTH="8489287927FGKDGKGD" ./usb_canary`
+```
+TWILIO=1 \
+TWILIO_FROM="+16665554321" \
+TWILIO_TO="+1123456789" \
+TWILIO_SID="oaiufs0al444236675kjfh" \
+TWILIO_AUTH="8489287927FGKDGKGD" \
+TWILIO_URL="https://api.twilio.com/2010-04-01/Accounts/$TWILIO_SID/Messages" \
+./usb_canary
+```
 
-With Slack alerting:
+With Slack alerting and minimalist config:
 `SLACK=1 SLACK_URL="https://hooks.slack.com/services/XX/XXXX/XXXX" ./usb_canary`
-or with full slack config:
-`SLACK_URL="https://hooks.slack.com/services/XX/XXXX/XXXX" SLACK_BOT="MyBot" SLACK_SUBJECT="Report Usb Canary" SLACK_COLOR="danger" ./usb_canary`
+or with full Slack config:
+```
+SLACK_URL="https://hooks.slack.com/services/XX/XXXX/XXXX" \
+SLACK_BOT="MyBot" SLACK_SUBJECT="Report Usb Canary" SLACK_COLOR="danger" \
+./usb_canary
+```
 
 Just with notify-send alerting (just to test and only with graphical desktop):
 `NOTIF=1 NOTIF_BIN="/usr/bin/notify-send" ./usb_canary`
@@ -22,7 +34,7 @@ Just with notify-send alerting (just to test and only with graphical desktop):
 If you should set environment's variables in file, you could it in .env file
 Copy .env.sample to .env and update values with yours:
 ```
-PARANOID=1
+PARANOID=0
 
 TWILIO=0
 TWILIO_FROM="+1123456789"
